@@ -1,0 +1,119 @@
+{
+  "name": "Public Reference - Signed Synthetic Integration Demo",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual",
+      "name": "Manual Demo",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { rawBody: JSON.stringify({ id: 'synthetic-n8n-001', email: 'buyer@example.test', region: 'ID', source: 'n8n-demo', message: 'Synthetic reference fixture' }) } }];"
+      },
+      "id": "fixture",
+      "name": "Serialize Synthetic Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{ $json.rawBody }}",
+        "dataPropertyName": "signature",
+        "encoding": "hex"
+      },
+      "id": "sign",
+      "name": "Sign Exact Body",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:3000/events/lead",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-webhook-signature",
+              "value": "={{ $json.signature }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.rawBody }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "service",
+      "name": "Integration Service",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Demo": {
+      "main": [
+        [
+          {
+            "node": "Serialize Synthetic Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Serialize Synthetic Event": {
+      "main": [
+        [
+          {
+            "node": "Sign Exact Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign Exact Body": {
+      "main": [
+        [
+          {
+            "node": "Integration Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
