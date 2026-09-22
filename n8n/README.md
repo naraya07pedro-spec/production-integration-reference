@@ -1,5 +1,7 @@
 # Inactive synthetic n8n demo
 
+The JSON in this directory is an inactive synthetic reference workflow. Historical screenshots under docs/evidence/ come from separate VAREVANT workflows and must not be interpreted as runtime validation of this demo.
+
 [workflow.sanitized.json](workflow.sanitized.json) is an authored orchestration example,
 not an exported private/production workflow and not proof of a successful n8n execution.
 
