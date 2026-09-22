@@ -1,120 +1,84 @@
 # Historical n8n Evidence
 
-This page contains public-safe historical evidence from separate VAREVANT n8n workflows.
+Five historical VAREVANT screenshots show execution history, a successful manual test, a visible failure, and discovery/routing paths. Open an image to inspect its details.
 
 > These screenshots document separate historical VAREVANT workflows. They do not represent execution of the inactive synthetic n8n demo included in this repository, and they make no claim about production traffic, uptime, client impact, or business outcomes.
 
-## 1. Workflow architecture
+## 1. Workflow architecture — privacy review pending
 
-![Sanitized historical n8n workflow architecture](01-n8n-master-workflow.webp)
-
-Sanitized historical n8n workflow showing dispatcher lease control, live re-validation, claim verification, routing, Gmail action boundaries, and explicit error branches.
-
-**What this verifies**
-
-- A non-trivial orchestration surface with scheduled dispatch, re-read/validation steps, routing, send boundaries, logging, and error paths.
-- Explicit duplicate-hold and claim-verification controls are visible.
-- The screenshot shows architecture and node relationships; it does not prove the correctness of every rule or any production-scale outcome.
+The supplied master workflow capture is **MANUAL_REDACTION_REQUIRED**: sender identity remains visible around the Gmail action and blue annotation. It is withheld rather than presented as public-safe evidence. The older corrupt master file has been removed from the current gallery.
 
 ## 2. Execution history
 
-![Sanitized historical n8n execution history](02-n8n-execution-overview.webp)
+![Historical n8n execution history with one success and one error](06-n8n-execution-overview.webp)
 
-Sanitized historical execution view showing one successful run and one failed run with visible timestamps and durations.
-
-**What this verifies**
+Sanitized historical n8n execution history showing one succeeded run and one failed run with timestamps and durations.
 
 - Aug 7, 13:19:52 — Succeeded in 6.64s.
 - Aug 7, 13:20:16 — Error in 4.307s.
-- Success and failure were surfaced in the n8n execution UI rather than inferred from the workflow canvas.
 
-This does not establish aggregate production traffic, uptime, reliability percentages, or business impact.
+The successful run precedes the failed run; this is not after-fix recovery evidence. Two visible records and an account quota counter do not establish aggregate production metrics.
 
-## 3. Successful test execution
+## 3. Successful manual test
 
-![Sanitized historical successful n8n test execution](03-n8n-successful-test-execution.webp)
+![Historical manual n8n test with the successful-execution confirmation](02-n8n-successful-test-execution.webp)
 
-Sanitized historical manual n8n test run showing an executed node path and the UI's "Workflow executed successfully" confirmation.
+Sanitized historical manual n8n test run showing an executed node path and the UI’s successful-execution confirmation.
 
-**What this verifies**
-
-- A real historical manual execution reached a successful n8n completion state.
-- The visible green path shows which portion of the workflow executed in that run.
-
-It does not establish that every branch, scheduled run, external side effect, or production workflow succeeded.
+The manual trigger and green path reach `STOP — No Candidate Batch`; the UI says `Workflow executed successfully`. This verifies completion of the visible test, not email delivery, execution of every branch, or runtime validation of this repository's synthetic demo.
 
 ## 4. Failed execution
 
-![Sanitized historical n8n failed execution](04-n8n-failed-execution.webp)
+![Historical n8n execution showing the failing error handler and error message](04-n8n-failed-execution.webp)
 
-Sanitized historical n8n error capture showing the failing handler and the exact visible payload-shape error:
+Sanitized historical n8n error capture showing the failing handler and the exact payload-shape error.
 
-"A 'json' property isn't an object [item 0]"
+The UI identifies `Handle Public Search Fetch Error` and reports `A 'json' property isn't an object [item 0]`. The failure is visibly surfaced. Its business impact and subsequent recovery are unknown; a node label containing `PROD` does not establish production context.
 
-**What this verifies**
+## 5. Discovery execution path
 
-- A workflow failure was surfaced at a named error-handling node.
-- The failure reason was inspectable in the n8n UI.
+![Historical n8n discovery path with executed search and candidate-processing nodes](01-n8n-discovery-execution-path.webp)
 
-This is evidence of a historical failure state, not evidence of customer impact, financial loss, or a production incident.
+Sanitized historical discovery path showing executed search, aggregation, candidate processing, and a no-candidate stop branch.
 
-## 5. Executed routing path
+Green node states and item counts are visible. The title includes a later revision and a fix label, but the capture does not demonstrate that the previously failing handler ran successfully. No after-fix recovery claim is made.
 
-![Historical n8n routing execution with merged item counts and the No Sendable Now branch](05-n8n-routing-executed-path.png)
+## 6. Routing execution path
 
-Executed historical n8n routing segment showing merged input counts, deterministic sendability selection, and a no-send fallback path.
+![Historical n8n routing path with merged item counts and a no-send branch](03-n8n-routing-executed-path-alt.webp)
 
-**What this verifies**
+Executed historical n8n routing segment showing merged input counts, sendability selection, and a no-send fallback path.
 
-- The visible executed path reads 4,414 items from Prospect Master and 32 from Suppression & Risk, then merges 4,446 items.
-- The selection step outputs one item.
-- "Any Sendable?" takes its false branch to "No Sendable Now".
+- Prospect Master shows 4,414 items; Suppression & Risk shows 32; the merge shows 4,446.
+- The selection step outputs one item; `Any Sendable?` takes its false branch to `No Sendable Now`.
+- The loop and freeze nodes are visible but not shown as executed.
 
-These are n8n UI item counts, not verified unique people, clients, messages sent, or production traffic.
-
-## 6. Later-version discovery execution
-
-![Sanitized historical n8n discovery execution](06-n8n-historical-discovery-execution.webp)
-
-Sanitized historical discovery execution on a later workflow version showing an executed candidate-discovery path.
-
-This is useful as additional operational evidence, but it is **not presented as verified recovery from screenshot 04** because direct before/after lineage is not established by the available screenshots.
-
-## 7. Routing detail
-
-![Sanitized close-up of historical n8n sendability routing](07-n8n-routing-detail.webp)
-
-Sanitized close-up of executed sendability routing showing 4,414 + 32 inputs merged to 4,446 items, one selected item, and the no-send fallback branch.
-
-This is a closer view of the same routing evidence represented in section 5, included for technical readability rather than as a separate claim.
+These are UI item counts, not verified unique people, clients, or messages sent. The screenshot does not expose the selection code or establish correctness of its rules.
 
 ## Evidence matrix
 
-“Verified” below means inspectable in the published repository.
-
-| Evidence | Verified | Boundary |
+| Evidence | Verified | Not verified / boundary |
 | --- | --- | --- |
-| Historical n8n workflow architecture | YES | Architecture does not prove every rule is correct |
-| Execution history with timestamps/durations | YES | Two visible runs only; not aggregate reliability |
-| Successful test execution screenshot | YES | Manual historical run; not whole-system production proof |
-| Failed execution screenshot | YES | Failure visible; no business-impact claim |
-| Historical routing execution | YES | UI item counts only |
-| Later-version discovery execution | YES | Not claimed as verified recovery from the failed run |
-| After-fix recovery | NO | Direct before/after lineage is not established |
-| Reusable sub-workflow screenshot | NO | Not established by the published set |
-| Aggregate production metrics | NO | No verified aggregate dataset |
-| Production traffic / uptime | NO | Not established by screenshots |
-| Client impact / business outcomes | NO | Not established by screenshots |
-| Runtime validation of synthetic demo | NO | Import, credential binding, and n8n execution remain separate |
+| Full master workflow capture | NO — withheld | Further privacy redaction required |
+| Execution history | YES | Two visible records; not aggregate reliability |
+| Execution timestamps and durations | YES | History capture only |
+| Successful manual test | YES | Visible test completion; not all branches or delivery |
+| Failed execution detail | YES | Named handler and visible error; no impact claim |
+| Discovery and routing execution | YES | Visible nodes, states, and item counts only |
+| After-fix recovery | NO | Same failing path later succeeding is not established |
+| Reusable sub-workflow | NO | Not established by these screenshots |
+| Production traffic, uptime, aggregate metrics | NO | Not established by screenshots |
+| Client impact, revenue impact, business outcomes | NO | No supporting evidence |
+| Runtime validation of synthetic demo | NO | Import, credential binding, and execution remain separate |
 
-## Evidence integrity and privacy
+## Source integrity and privacy
 
-Publication copies only remove or hide browser chrome, account-specific URLs/IDs, sender/account text, and an OS notification where present. Workflow nodes, connections, execution states, timestamps, durations, item counts, and error text were not edited.
+The sole image source for this gallery is the supplied `n8n_evidence_final.zip`. The five published WebP files are byte-for-byte copies of its entries: no further redaction, cropping, recompression, reconstruction, or generation was performed. Their existing sanitization was supplied with the archive. Visual review found no readable sensitive values in the five accepted captures; the master capture was excluded for the remaining sender identity.
 
-The screenshots are intentionally presented as **historical VAREVANT workflow evidence**. They remain separate from the [inactive synthetic n8n demo](../../n8n/README.md), which exists as a public-safe authored reference and is not represented here as a runtime-validated production export.
+Older gallery copies, including the corrupt master and duplicate routing views, are no longer used. Screenshot filenames retain the archive's numbering; gallery order follows the review sequence above.
 
 ## Other inspectable proof
 
-- [TypeScript source and tests](../../tests/) plus [GitHub Actions](https://github.com/naraya07pedro-spec/production-integration-reference/actions/workflows/ci.yml) cover the standalone TypeScript/PostgreSQL reference using synthetic fixtures.
+- [Tests](../../tests/) and [GitHub Actions](https://github.com/naraya07pedro-spec/production-integration-reference/actions/workflows/ci.yml) cover the TypeScript/PostgreSQL reference using synthetic fixtures.
 - [Inactive synthetic n8n demo](../../n8n/README.md) documents its setup and runtime boundary.
-- [Historical debugging case](../debugging-case.md) documents a separate repository state-management bug with public commit evidence.
+- [Historical debugging case](../debugging-case.md) documents a separate repository state-management bug, not recovery from an n8n failure.
