@@ -4,8 +4,12 @@ A runnable **TypeScript + PostgreSQL integration reference** for technical revie
 It demonstrates signed webhook intake, atomic reservation before HTTP side effects,
 classified retries, and persisted outcomes. **Reference/demo code; no client or production-use claim.**
 
-**Start reviewing:** [handler](src/handler.ts) → [PostgreSQL reservation](src/idempotency.ts) →
-[HTTP boundary](src/http-client.ts) → [tests](tests/) → [CI](https://github.com/naraya07pedro-spec/production-integration-reference/actions/workflows/ci.yml).
+**Historical n8n evidence:** [executed routing path and evidence boundaries](docs/evidence/README.md).
+
+**Review order:** [handler](src/handler.ts) → [PostgreSQL reservation](src/idempotency.ts) →
+[tests](tests/) → [CI](https://github.com/naraya07pedro-spec/production-integration-reference/actions/workflows/ci.yml) →
+[historical n8n evidence](docs/evidence/README.md) → [inactive synthetic n8n JSON](n8n/workflow.sanitized.json) →
+[debugging case](docs/debugging-case.md).
 
 ## Run in two minutes
 
@@ -81,8 +85,8 @@ Use HTTPS outside localhost. Never commit environment files.
 
 Derived from [VAREVANT source at 78acd16](https://github.com/naraya07pedro-spec/varevant.com/tree/78acd16377bab53a1495fe53abe00a0951a4cf29/examples/production-integration-reference), then hardened independently.
 The public CI history is the authority for executed checks, not the existence of a workflow file.
-Local/CI fixtures are synthetic. No production execution counts, uptime, business outcomes, n8n runtime success, or accepted upstream contributions are claimed.
-[n8n evidence status](docs/evidence/README.md) records what is still missing.
+Local/CI fixtures are synthetic. No production execution counts, uptime, business outcomes, runtime validation of the synthetic n8n demo, or accepted upstream contributions are claimed.
+[Historical n8n evidence](docs/evidence/README.md) documents a separate VAREVANT routing execution and the remaining gaps.
 
 Logs use fixed event names and categories; no payloads, tokens, URLs, provider messages, or external IDs.
 The database deliberately stores the normalized payload: real deployments need restricted DB access and a retention policy.
