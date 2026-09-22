@@ -4,7 +4,7 @@ A runnable **TypeScript + PostgreSQL integration reference** for technical revie
 It demonstrates signed webhook intake, atomic reservation before HTTP side effects,
 classified retries, and persisted outcomes. **Reference/demo code; no client or production-use claim.**
 
-**Historical n8n evidence:** [executed routing path and evidence boundaries](docs/evidence/README.md).
+**Historical n8n evidence:** [architecture, execution history, success/failure states, and routing screenshots](docs/evidence/README.md).
 
 **Review order:** [handler](src/handler.ts) → [PostgreSQL reservation](src/idempotency.ts) →
 [tests](tests/) → [CI](https://github.com/naraya07pedro-spec/production-integration-reference/actions/workflows/ci.yml) →
