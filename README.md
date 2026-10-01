@@ -6,6 +6,8 @@ classified retries, and persisted outcomes. **Reference/demo code; no client or 
 
 **Operational n8n evidence:** [reviewer-first execution, routing, sendability, and failure evidence](docs/operational-evidence/README.md).
 
+**Historical workflow source:** [VAREVANT n8n engineering pack](https://github.com/naraya07pedro-spec/varevant.com/tree/main/n8n) — sanitized operational JSON, extracted Code-node controls and offline tests. Its export is a separate historical revision; these screenshots do not establish its runtime execution.
+
 **Review order:** [handler](src/handler.ts) → [PostgreSQL reservation](src/idempotency.ts) →
 [tests](tests/) → [CI](https://github.com/naraya07pedro-spec/production-integration-reference/actions/workflows/ci.yml) →
 [operational n8n evidence](docs/operational-evidence/README.md) → [historical evidence notes](docs/evidence/README.md) → [inactive synthetic n8n JSON](n8n/workflow.sanitized.json) →
