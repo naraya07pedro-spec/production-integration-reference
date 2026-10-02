@@ -13,6 +13,8 @@ classified retries, and persisted outcomes. **Reference/demo code; no client or 
 [operational n8n evidence](docs/operational-evidence/README.md) → [historical evidence notes](docs/evidence/README.md) → [inactive synthetic n8n JSON](n8n/workflow.sanitized.json) →
 [debugging case](docs/debugging-case.md).
 
+**Reliability review in 30 seconds:** [HMAC, immutable identity, PostgreSQL contention, retries and partial commits](docs/RELIABILITY-REVIEW.md). Includes the exact source/test path and the controlled persistence-failure case.
+
 ## Run in two minutes
 
 Node.js 24+:
