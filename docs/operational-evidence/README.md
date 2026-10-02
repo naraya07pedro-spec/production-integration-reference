@@ -84,6 +84,6 @@ Historical, privacy-reviewed n8n screenshots from VAREVANT workflows, organized 
 
 ## Privacy and source integrity
 
-The public images above are the already-sanitized historical copies in [`docs/evidence/`](../evidence/). The existing gallery records that they were supplied as sanitized source images and visually reviewed for readable sensitive values. A separate master workflow capture remains withheld because sender identity is visible.
+The public images above are the already-sanitized historical copies in [`docs/evidence/`](../evidence/). They were visually reviewed for readable sensitive values. The VAREVANT flagship now adds a [sanitized original full canvas and source/recovery records](https://github.com/naraya07pedro-spec/varevant.com/tree/main/n8n/runtime-evidence). Its V6 match is strong at workflow/path level, and its V19 recovery is bounded to the error handler; neither establishes an exact runtime snapshot or complete provider recovery.
 
 No screenshot is reconstructed here. This page only provides a recruiter-first review path over the existing public evidence.

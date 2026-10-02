@@ -4,9 +4,9 @@ Five historical VAREVANT screenshots show execution history, a successful manual
 
 > These screenshots document separate historical VAREVANT workflows. They do not represent execution of the inactive synthetic n8n demo included in this repository, and they make no claim about production traffic, uptime, client impact, or business outcomes.
 
-## 1. Workflow architecture — privacy review pending
+## 1. Full-canvas overview in the flagship
 
-The supplied master workflow capture is **MANUAL_REDACTION_REQUIRED**: sender identity remains visible around the Gmail action and blue annotation. It is withheld rather than presented as public-safe evidence. The older corrupt master file has been removed from the current gallery.
+The older referenced master capture is not part of this gallery; its corrupt copy was removed. A newly located [sanitized original V7 full-canvas overview](https://github.com/naraya07pedro-spec/varevant.com/tree/main/n8n/runtime-evidence) is now published in the VAREVANT flagship package, with a [STRONG V6 workflow/path match](https://github.com/naraya07pedro-spec/varevant.com/blob/main/n8n/runtime-evidence/SOURCE-TO-EXECUTION.md) and a [bounded V19 handler recovery case](https://github.com/naraya07pedro-spec/varevant.com/blob/main/n8n/runtime-evidence/RECOVERY-CASE.md). These new artifacts do not change what the five images below individually prove.
 
 ## 2. Execution history
 
@@ -33,7 +33,7 @@ The manual trigger and green path reach `STOP — No Candidate Batch`; the UI sa
 
 Sanitized historical n8n error capture showing the failing handler and the exact payload-shape error.
 
-The UI identifies `Handle Public Search Fetch Error` and reports `A 'json' property isn't an object [item 0]`. The failure is visibly surfaced. Its business impact and subsequent recovery are unknown; a node label containing `PROD` does not establish production context.
+The UI identifies `Handle Public Search Fetch Error` and reports `A 'json' property isn't an object [item 0]`. The failure is visibly surfaced. This capture alone does not establish root cause or recovery; the linked flagship case adds separate source and later handler evidence. Business impact is unknown, and a node label containing `PROD` does not establish production context.
 
 ## 5. Discovery execution path
 
@@ -59,13 +59,13 @@ These are UI item counts, not verified unique people, clients, or messages sent.
 
 | Evidence | Verified | Not verified / boundary |
 | --- | --- | --- |
-| Full master workflow capture | NO — withheld | Further privacy redaction required |
+| Older referenced master capture in this gallery | NO — unavailable | A separately sourced, sanitized V7 overview is published in the linked flagship runtime pack. |
 | Execution history | YES | Two visible records; not aggregate reliability |
 | Execution timestamps and durations | YES | History capture only |
 | Successful manual test | YES | Visible test completion; not all branches or delivery |
 | Failed execution detail | YES | Named handler and visible error; no impact claim |
 | Discovery and routing execution | YES | Visible nodes, states, and item counts only |
-| After-fix recovery | NO | Same failing path later succeeding is not established |
+| After-fix recovery within these five images | NO | A separate bounded handler recovery case is linked above. |
 | Reusable sub-workflow | NO | Not established by these screenshots |
 | Production traffic, uptime, aggregate metrics | NO | Not established by screenshots |
 | Client impact, revenue impact, business outcomes | NO | No supporting evidence |
