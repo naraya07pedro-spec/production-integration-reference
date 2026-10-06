@@ -1,5 +1,20 @@
 # Production Integration Reference
 
+## Hiring manager quick scan
+
+**Role fit:** Integration Engineer · Backend/API Engineer · Automation Engineer
+
+A runnable TypeScript/PostgreSQL integration reference focused on the failure modes that usually appear after a webhook leaves the happy path.
+
+- Raw-byte HMAC verification before JSON parsing
+- Immutable event identity and PostgreSQL reservation before side effects
+- Classified, bounded retries with stable idempotency keys
+- Persisted outcomes and explicit handling of partial / ambiguous failure
+- HTTP, database-concurrency and signed end-to-end checks in CI
+
+**Fastest review path:** [reliability review](docs/RELIABILITY-REVIEW.md) → [handler](src/handler.ts) → [reservation](src/idempotency.ts) → [tests](tests/)
+
+
 A runnable **TypeScript + PostgreSQL integration reference** for technical review.
 It demonstrates signed webhook intake, atomic reservation before HTTP side effects,
 classified retries, and persisted outcomes. **Reference/demo code; no client or production-use claim.**
