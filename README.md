@@ -1,5 +1,9 @@
 # Production Integration Reference
 
+[![CI](https://github.com/naraya07pedro-spec/production-integration-reference/actions/workflows/ci.yml/badge.svg)](https://github.com/naraya07pedro-spec/production-integration-reference/actions/workflows/ci.yml)
+[![TypeScript strict](https://img.shields.io/badge/typescript-strict-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js 24+](https://img.shields.io/badge/node.js-24%2B-green.svg)](https://nodejs.org/)
+
 ## Hiring manager quick scan
 
 **Role fit:** Integration Engineer · Backend/API Engineer · Automation Engineer
