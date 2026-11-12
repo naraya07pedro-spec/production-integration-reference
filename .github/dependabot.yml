@@ -1,0 +1,20 @@
+# Dependabot version updates for the public TypeScript/PostgreSQL reference.
+# Security alerts/updates are governed separately by GitHub repository settings.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "05:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 3
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "05:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 2
