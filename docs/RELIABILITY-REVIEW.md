@@ -12,7 +12,7 @@ Evan Naraya's runnable TypeScript and PostgreSQL reference demonstrates safe int
 | Contract | Size, JSON, identity, email and region checks before reservation | A trusted source namespace is part of deployment configuration |
 | Identity | Source plus immutable event ID, independent of mutable email | Retention determines the replay horizon |
 | Contention | PostgreSQL unique constraint and INSERT ON CONFLICT decide one winner | Requires the real database; a memory fixture is separate evidence |
-| Retry | 408, 429, 5xx and transport failures; bounded exponential delay and jitter | Provider must honor Idempotency-Key; no Retry-After coordinator |
+| Retry | 408, 429, 5xx and transport failures; bounded exponential delay/jitter, plus valid 429/503 Retry-After up to 30s | Provider must honor Idempotency-Key; no durable retry scheduler. Over-budget wait hints stop automatic retries for manual/provider reconciliation. |
 | Outcome | Persist SENT or FAILED only from an existing RESERVED row; a missing or finalized row makes the write fail explicitly | Provider acceptance is not final recipient delivery |
 | Partial commit | Successful external action plus failed markSent leaves RESERVED | Human/provider reconciliation is required; no automatic takeover |
 | Logging | Fixed event names and error classes; no raw payload/provider messages | DB stores normalized payload and needs deployment retention/access controls |
