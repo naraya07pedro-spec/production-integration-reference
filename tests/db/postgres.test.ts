@@ -30,5 +30,32 @@ test("PostgreSQL unique reservation, concurrent side effects, persistence and fa
    await assert.rejects(processLeadEvent(failed,{store,logger,downstream:{async sendLead(){throw new HttpError(400);}}},immediate));
    const failure=await pool.query("SELECT state,error_class FROM integration_events WHERE idempotency_key=$1",[buildIdempotencyKey(normalizeLead(failed))]);
    assert.deepEqual(failure.rows,[{state:"FAILED",error_class:"downstream_failure"}]);
+
+   // A missing reservation must never be reported as a successfully persisted outcome.
+   const missingKey="missing-"+randomUUID();
+   await assert.rejects(store.markSent(missingKey,"phantom"),/existing RESERVED event/);
+   await assert.rejects(store.markFailed(missingKey,"downstream_failure"),/existing RESERVED event/);
+
+   // An outcome that has already been finalized cannot be silently overwritten.
+   const sentKey=buildIdempotencyKey(normalizeLead(lead));
+   const failedKey=buildIdempotencyKey(normalizeLead(failed));
+   await assert.rejects(store.markFailed(sentKey,"late_failure"),/existing RESERVED event/);
+   await assert.rejects(store.markSent(failedKey,"late_success"),/existing RESERVED event/);
+   const terminal=await pool.query(
+     "SELECT idempotency_key,state FROM integration_events WHERE idempotency_key IN ($1,$2) ORDER BY idempotency_key",
+     [sentKey,failedKey],
+   );
+   assert.deepEqual(new Map(terminal.rows.map(row=>[row.idempotency_key,row.state])),
+     new Map([[sentKey,"SENT"],[failedKey,"FAILED"]]));
+
+   // Simulate human/provider reconciliation winning while a worker is in flight.
+   const reconciling={...lead,id:"reconciled-before-ack"};
+   const reconcilingKey=buildIdempotencyKey(normalizeLead(reconciling));
+   assert.equal((await store.reserve(reconcilingKey,normalizeLead(reconciling))).acquired,true);
+   await pool.query("UPDATE integration_events SET state = 'FAILED' WHERE idempotency_key=$1",[reconcilingKey]);
+   await assert.rejects(store.markSent(reconcilingKey,"late-provider-ack"),/existing RESERVED event/);
+   const reconciled=await pool.query(
+     "SELECT state,external_id FROM integration_events WHERE idempotency_key=$1",[reconcilingKey]);
+   assert.deepEqual(reconciled.rows,[{state:"FAILED",external_id:null}]);
  }finally{await pool.end();await admin.query('DROP SCHEMA "'+schema+'" CASCADE');await admin.end();}
 });
