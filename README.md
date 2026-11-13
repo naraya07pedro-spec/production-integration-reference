@@ -10,7 +10,7 @@
 
 A runnable TypeScript/PostgreSQL integration reference focused on the failure modes that usually appear after a webhook leaves the happy path.
 
-- Raw-byte HMAC verification before JSON parsing
+- Raw-byte HMAC verification before JSON parsing and server-bound event namespace
 - Immutable event identity and PostgreSQL reservation before side effects
 - Classified, bounded retries with stable idempotency keys
 - Persisted outcomes and explicit handling of partial / ambiguous failure
@@ -94,7 +94,7 @@ flowchart LR
 | --- | --- |
 | HMAC | SHA-256 over timestamp + exact body bytes; 300-second freshness window; timing-safe comparison before JSON parsing. |
 | Invalid input | 400 malformed JSON, 401 invalid signature, 413 over 64 KiB, 422 invalid fields/region. |
-| Event identity | Hash of source + immutable event ID; email changes do not evade deduplication. Source must be a trusted namespace. |
+| Event identity | Hash of **server-configured** trusted source + immutable event ID; email changes do not evade deduplication. Signed payload source must match `TRUSTED_SOURCE` or intake returns 422 before reservation and downstream effects. |
 | Concurrent replay | Unique SQL constraint and atomic INSERT decide one winner before sending. CI exercises 12 contenders. |
 | Transient failure | 408, 429, 500–599 and fetch transport/timeout failures: 3 attempts by default, at most 5; capped exponential delay plus jitter. For HTTP 429/503, valid `Retry-After` seconds or HTTP-date is honored up to 30 seconds. A longer hint **prevents automatic retry**, rather than sending early. |
 | Permanent error | Other HTTP statuses, invalid success JSON, and application errors are not blindly retried. |
@@ -114,7 +114,7 @@ This is **not exactly-once delivery**. Failed/RESERVED events require reconcilia
 - [Historical debugging case](docs/debugging-case.md) and [metrics collection plan](docs/instrumentation-plan.md)
 
 For a separately configured service, apply `db/001_init.sql` with `psql "$DATABASE_URL" -f db/001_init.sql`,
-then set `DATABASE_URL`, `WEBHOOK_SECRET`, `DOWNSTREAM_URL`, `DOWNSTREAM_TOKEN` and run `npm start`.
+then set `DATABASE_URL`, `WEBHOOK_SECRET`, `DOWNSTREAM_URL`, `DOWNSTREAM_TOKEN`, and `TRUSTED_SOURCE` (for example `demo`) and run `npm start`. The source must be a lowercase slug of 1-100 characters (letters, digits, underscores, hyphens; cannot be `unknown`). A validly signed body claiming a **different** source is rejected before any reservation or side effect. **Breaking deployment requirement:** old launch configurations without `TRUSTED_SOURCE` now fail closed. Use a distinct signer/service configuration for each independently trusted source; a shared webhook secret is not a multi-tenant authorization system.
 `POST /events/lead` requires `x-webhook-timestamp` (10-digit Unix seconds) and `x-webhook-signature` (hex SHA-256 HMAC of `timestamp + "." + raw_request_body`). Requests outside a 300-second window are rejected. **Breaking protocol change:** senders must update their signer and maintain reasonably synchronized clocks.
 See [scripts/demo.ts](scripts/demo.ts) for a working signed caller and mock receiver.
 Use HTTPS outside localhost. Never commit environment files.

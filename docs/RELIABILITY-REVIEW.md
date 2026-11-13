@@ -9,8 +9,8 @@ Evan Naraya's runnable TypeScript and PostgreSQL reference demonstrates safe int
 | Boundary | Implemented behavior | Material limit |
 | --- | --- | --- |
 | Intake | HMAC SHA-256 over original request bytes, timing-safe compare before parsing | Signed timestamp freshness bound at 300 seconds; within-window replay still relies on event reservation |
-| Contract | Size, JSON, identity, email and region checks before reservation | A trusted source namespace is part of deployment configuration |
-| Identity | Source plus immutable event ID, independent of mutable email | Retention determines the replay horizon |
+| Contract | Size, HMAC, JSON, signer-bound source, identity, email and region checks before reservation | `TRUSTED_SOURCE` is required at server startup, and a signed source mismatch is rejected before reservation; each separately trusted source needs its own credential/service boundary. |
+| Identity | Server-configured source plus immutable event ID, independent of mutable email | HMAC authenticates bytes, not arbitrary source authority. Retention determines the replay horizon. |
 | Contention | PostgreSQL unique constraint and INSERT ON CONFLICT decide one winner | Requires the real database; a memory fixture is separate evidence |
 | Retry | 408, 429, 5xx and transport failures; bounded exponential delay/jitter, plus valid 429/503 Retry-After up to 30s | Provider must honor Idempotency-Key; no durable retry scheduler. Over-budget wait hints stop automatic retries for manual/provider reconciliation. |
 | Outcome | Persist SENT or FAILED only from an existing RESERVED row; a missing or finalized row makes the write fail explicitly | Provider acceptance is not final recipient delivery |
