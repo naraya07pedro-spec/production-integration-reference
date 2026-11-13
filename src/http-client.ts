@@ -35,11 +35,31 @@ export class FetchDownstreamClient implements DownstreamClient {
       }
       if (response.status === 204) return { externalId: null };
       // Keep timeout active while reading the body; never silently turn a timeout into success.
+      // A successful status is not permission to buffer unbounded provider data.
+      // Limit actual streamed bytes, not just an optional Content-Length header.
+      const maxBytes = 16 * 1024;
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("Invalid downstream response");
+      const chunks: Uint8Array[] = [];
+      let size = 0;
       let body: unknown;
-      try { body = await response.json(); }
-      catch (error) {
+      try {
+        while (true) {
+          const part = await reader.read();
+          if (part.done) break;
+          size += part.value.byteLength;
+          if (size > maxBytes) {
+            await reader.cancel();
+            throw new Error("Invalid downstream response");
+          }
+          chunks.push(part.value);
+        }
+        body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+      } catch (error) {
         if (controller.signal.aborted || error instanceof TypeError) throw new TransientError();
-        throw new Error("Invalid downstream JSON");
+        throw new Error("Invalid downstream response");
+      } finally {
+        reader.releaseLock();
       }
       if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("Invalid downstream response");
       const id = (body as { id?: unknown }).id;
