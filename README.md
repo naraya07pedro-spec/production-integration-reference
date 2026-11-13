@@ -84,6 +84,7 @@ flowchart LR
 | Concurrent replay | Unique SQL constraint and atomic INSERT decide one winner before sending. CI exercises 12 contenders. |
 | Transient failure | 408, 429, 500–599 and fetch transport/timeout failures: 3 attempts by default, at most 5; capped exponential delay plus jitter. |
 | Permanent error | Other HTTP statuses, invalid success JSON, and application errors are not blindly retried. |
+| Provider success contract | HTTP 204 may omit a response ID. Other successful JSON responses must contain a nonempty string `id`; malformed success is rejected rather than persisted as SENT. |
 | State | SENT after success; FAILED after send failure; both block replay. |
 | Ambiguous delivery | A timeout may occur after the provider accepted the request. The provider **must honor Idempotency-Key** for safe retries. |
 | Crash / failed success-write | RESERVED remains blocked pending manual reconciliation; no automatic lease takeover. |
