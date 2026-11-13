@@ -1,4 +1,4 @@
-import { HttpError, TransientError } from "./retry.js";
+import { HttpError, TransientError, parseRetryAfter } from "./retry.js";
 import type { DownstreamClient, NormalizedLead } from "./types.js";
 
 export class FetchDownstreamClient implements DownstreamClient {
@@ -30,8 +30,13 @@ export class FetchDownstreamClient implements DownstreamClient {
         throw error;
       }
       if (!response.ok) {
+        // Only the 429 and 503 status contracts define an actionable retry hint.
+        // Convert the header into a bounded interval, never return raw headers
+        // or provider body content to logs/exception messages.
+        const retryAfterMs = response.status === 429 || response.status === 503
+          ? parseRetryAfter(response.headers.get("retry-after")) : null;
         await response.body?.cancel();
-        throw new HttpError(response.status);
+        throw new HttpError(response.status, retryAfterMs);
       }
       if (response.status === 204) return { externalId: null };
       // Keep timeout active while reading the body; never silently turn a timeout into success.
