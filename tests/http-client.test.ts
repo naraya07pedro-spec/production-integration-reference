@@ -76,3 +76,31 @@ test("oversized successful provider response never becomes SENT",async t=>{
  const client=new FetchDownstreamClient("http://127.0.0.1:"+port,"local-test-only");
  await assert.rejects(client.sendLead(normalizeLead(lead),"stable-key"),/Invalid downstream response/);
 });
+
+test("real 429 Retry-After is honored without exposing the response body",async t=>{
+ const keys:string[]=[];let calls=0;const waits:number[]=[];
+ const server=createServer((_req,res)=>{
+   calls++;keys.push(String(_req.headers["idempotency-key"]));
+   if(calls===1)res.writeHead(429,{"retry-after":"2"}).end("sensitive-provider-response");
+   else res.writeHead(200,{"content-type":"application/json"}).end('{"id":"accepted"}');
+ });
+ server.listen(0,"127.0.0.1");await once(server,"listening");t.after(()=>server.close());
+ const port=(server.address() as {port:number}).port;
+ const client=new FetchDownstreamClient("http://127.0.0.1:"+port,"local-test-only");
+ assert.deepEqual(await withRetry(()=>client.sendLead(normalizeLead(lead),"same-event"),
+  {baseDelayMs:100,sleep:async ms=>{waits.push(ms);},random:()=>0}),{externalId:"accepted"});
+ assert.deepEqual(keys,["same-event","same-event"]);
+ assert.deepEqual(waits,[2000]);
+});
+test("provider hint beyond configured delay refuses automatic retry",async t=>{
+ let calls=0;
+ const server=createServer((_req,res)=>{calls++;res.writeHead(429,{"retry-after":"120"}).end("private");});
+ server.listen(0,"127.0.0.1");await once(server,"listening");t.after(()=>server.close());
+ const port=(server.address() as {port:number}).port;
+ const client=new FetchDownstreamClient("http://127.0.0.1:"+port,"local-test-only");
+ await assert.rejects(withRetry(()=>client.sendLead(normalizeLead(lead),"event"),
+  {sleep:async()=>{throw new Error("should not wait");}}),
+  (error:unknown)=>error instanceof HttpError && error.status===429 &&
+    error.retryAfterMs===30001 && !error.message.includes("private"));
+ assert.equal(calls,1);
+});
