@@ -40,24 +40,30 @@ export class PostgresIdempotencyStore implements IdempotencyStore {
   }
 
   async markSent(idempotencyKey: string, externalId: string | null): Promise<void> {
-    await this.pool.query(
+    const result = await this.pool.query(
       [
         "UPDATE integration_events",
         "SET state = 'SENT', external_id = $2, updated_at = now()",
-        "WHERE idempotency_key = $1",
+        "WHERE idempotency_key = $1 AND state = 'RESERVED'",
       ].join("\n"),
       [idempotencyKey, externalId],
     );
+    if (result.rowCount !== 1) {
+      throw new Error("SENT transition requires an existing RESERVED event");
+    }
   }
 
   async markFailed(idempotencyKey: string, errorClass: string): Promise<void> {
-    await this.pool.query(
+    const result = await this.pool.query(
       [
         "UPDATE integration_events",
         "SET state = 'FAILED', error_class = $2, updated_at = now()",
-        "WHERE idempotency_key = $1",
+        "WHERE idempotency_key = $1 AND state = 'RESERVED'",
       ].join("\n"),
       [idempotencyKey, errorClass],
     );
+    if (result.rowCount !== 1) {
+      throw new Error("FAILED transition requires an existing RESERVED event");
+    }
   }
 }
