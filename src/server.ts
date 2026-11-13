@@ -26,7 +26,9 @@ export function createIntegrationServer(deps: {
       }
       const rawBody = Buffer.concat(chunks);
       const signature = req.headers["x-webhook-signature"];
-      if (typeof signature !== "string" || !verifyWebhookSignature(rawBody, signature, deps.webhookSecret)) {
+      const timestamp = req.headers["x-webhook-timestamp"];
+      if (typeof signature !== "string" || typeof timestamp !== "string" ||
+          !verifyWebhookSignature(rawBody, signature, deps.webhookSecret, timestamp)) {
         reply(401, { error: "invalid_signature" }); return;
       }
       let payload: unknown;
