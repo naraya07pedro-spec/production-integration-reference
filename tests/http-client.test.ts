@@ -64,3 +64,15 @@ test("2xx JSON requires a nonempty string provider id; 204 may omit it",async t=
  assert.deepEqual(await client.sendLead(normalizeLead(lead),"stable-key"),{externalId:null});
  assert.equal(calls,replies.length);
 });
+
+test("oversized successful provider response never becomes SENT",async t=>{
+ const server=createServer((_req,res)=>{
+   res.writeHead(200,{"content-type":"application/json"});
+   res.end(JSON.stringify({id:"x".repeat(20000)}));
+ });
+ server.listen(0,"127.0.0.1");await once(server,"listening");
+ t.after(()=>{server.closeAllConnections();server.close();});
+ const port=(server.address() as {port:number}).port;
+ const client=new FetchDownstreamClient("http://127.0.0.1:"+port,"local-test-only");
+ await assert.rejects(client.sendLead(normalizeLead(lead),"stable-key"),/Invalid downstream response/);
+});
