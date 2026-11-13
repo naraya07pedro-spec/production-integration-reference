@@ -96,7 +96,7 @@ flowchart LR
 | Invalid input | 400 malformed JSON, 401 invalid signature, 413 over 64 KiB, 422 invalid fields/region. |
 | Event identity | Hash of source + immutable event ID; email changes do not evade deduplication. Source must be a trusted namespace. |
 | Concurrent replay | Unique SQL constraint and atomic INSERT decide one winner before sending. CI exercises 12 contenders. |
-| Transient failure | 408, 429, 500–599 and fetch transport/timeout failures: 3 attempts by default, at most 5; capped exponential delay plus jitter. |
+| Transient failure | 408, 429, 500–599 and fetch transport/timeout failures: 3 attempts by default, at most 5; capped exponential delay plus jitter. For HTTP 429/503, valid `Retry-After` seconds or HTTP-date is honored up to 30 seconds. A longer hint **prevents automatic retry**, rather than sending early. |
 | Permanent error | Other HTTP statuses, invalid success JSON, and application errors are not blindly retried. |
 | Provider success contract | HTTP 204 may omit a response ID. Other successful JSON responses must contain a nonempty string `id`; malformed success is rejected rather than persisted as SENT. |
 | State | SENT after success; FAILED after send failure; both block replay. |
@@ -104,7 +104,7 @@ flowchart LR
 | Crash / failed success-write | RESERVED remains blocked pending manual reconciliation; no automatic lease takeover. |
 | Replay horizon | Existing event keys block repeated side effects while rows are retained. An unseen signed event must be at most 300 seconds old; a valid replay inside the window is still subject to event-key deduplication. |
 
-This is **not exactly-once delivery**. Failed/RESERVED events require reconciliation with the provider before any manual retry. Do not delete a reservation merely to unblock processing. A duplicate response reports stored state; it does not certify successful delivery. Retry-After coordination, distributed rate limiting, queueing, credential rotation, retention policy, and deployment authentication are outside this reference.
+This is **not exactly-once delivery**. Failed/RESERVED events require reconciliation with the provider before any manual retry. Do not delete a reservation merely to unblock processing. A duplicate response reports stored state; it does not certify successful delivery. Distributed rate limiting, queueing, credential rotation, retention policy, and deployment authentication are outside this reference. An over-budget `Retry-After` fails closed as a terminal local failure and must be assessed during provider reconciliation; this reference does not schedule delayed resume or claim provider-enforced exactly-once delivery.
 
 ## Inspect or run the service
 
