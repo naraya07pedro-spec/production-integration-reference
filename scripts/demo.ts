@@ -24,7 +24,7 @@ try{
  const secret=randomUUID();
  const server=createIntegrationServer({store:new PostgresIdempotencyStore(pool),
    downstream:new FetchDownstreamClient("http://127.0.0.1:"+port,"local-demo-only"),
-   webhookSecret:secret,logger:{info(){},error(){}}});
+   webhookSecret:secret,trustedSource:"demo",logger:{info(){},error(){}}});
  servers.push(server);server.listen(0,"127.0.0.1");await once(server,"listening");
  const url="http://127.0.0.1:"+(server.address() as {port:number}).port+"/events/lead";
  const body=JSON.stringify({id:"synthetic-demo-001",email:"buyer@example.test",region:"ID",source:"demo"});
