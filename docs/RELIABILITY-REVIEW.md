@@ -13,7 +13,7 @@ Evan Naraya's runnable TypeScript and PostgreSQL reference demonstrates safe int
 | Identity | Source plus immutable event ID, independent of mutable email | Retention determines the replay horizon |
 | Contention | PostgreSQL unique constraint and INSERT ON CONFLICT decide one winner | Requires the real database; a memory fixture is separate evidence |
 | Retry | 408, 429, 5xx and transport failures; bounded exponential delay and jitter | Provider must honor Idempotency-Key; no Retry-After coordinator |
-| Outcome | Persist SENT or FAILED; existing states block another action | Provider acceptance is not final recipient delivery |
+| Outcome | Persist SENT or FAILED only from an existing RESERVED row; a missing or finalized row makes the write fail explicitly | Provider acceptance is not final recipient delivery |
 | Partial commit | Successful external action plus failed markSent leaves RESERVED | Human/provider reconciliation is required; no automatic takeover |
 | Logging | Fixed event names and error classes; no raw payload/provider messages | DB stores normalized payload and needs deployment retention/access controls |
 
@@ -21,7 +21,7 @@ Evan Naraya's runnable TypeScript and PostgreSQL reference demonstrates safe int
 
 Context: processLeadEvent reserves a synthetic event and the injected downstream accepts it. Failure: markSent is forced to throw a database-unavailable error. Root cause: provider and database writes cannot share a transaction. Safeguard: the reservation stays RESERVED rather than releasing ownership or retrying the external action. Verified result: the existing test asserts rejection and retained RESERVED state. See [integration.test.ts](../tests/integration.test.ts).
 
-This is a controlled fault test, not a recovered customer incident. The durable PostgreSQL implementation is covered separately by database tests in CI. Any manual retry must reconcile the provider outcome first; deleting the reservation would discard the protection.
+This is a controlled fault test, not a recovered customer incident. The durable PostgreSQL implementation is covered separately by database tests in CI. PostgreSQL state-transition tests also reject updates when an event has been deleted, finalized, or reconciled by another actor: a zero-row UPDATE is not a successful persisted outcome. These checks do **not** make the external provider write atomic with the database. Any manual retry must reconcile the provider outcome first; deleting the reservation would discard the protection.
 
 ## Other proof and recovery
 
