@@ -6,7 +6,7 @@ import {mkdirSync,writeFileSync} from "node:fs";
 import {isLocalDockerEndpoint,parseLoopbackPublishedPort} from "./reviewer-smoke-guards.mjs";
 
 const evidence={
- startedAt:new Date().toISOString(),sourceSha:process.env.GITHUB_SHA||null,
+ startedAt:new Date().toISOString(),sourceSha:process.env.EVIDENCE_SOURCE_SHA||process.env.GITHUB_SHA||null,
  node:process.version,platform:process.platform,checks:[],cleanup:"not-started",
  database:"generated disposable reference_test in a uniquely named loopback Docker container",
 };
