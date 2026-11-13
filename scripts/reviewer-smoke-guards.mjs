@@ -1,7 +1,7 @@
 // Public, dependency-free guards for a disposable reviewer Docker session.
 export function isLocalDockerEndpoint(endpoint) {
  const value=String(endpoint??"").trim();
- return /^unix:\/\/\/[^\\s]+$/.test(value)||/^npipe:\/{4}\\.\/pipe\/[A-Za-z0-9_.-]+$/.test(value)||
+ return /^unix:\/\/\/[^\s]+$/.test(value)||/^npipe:\/{4}\.\/pipe\/[A-Za-z0-9_.-]+$/.test(value)||
   /^tcp:\/\/(?:127\.0\.0\.1|localhost|\[::1\]):[0-9]{1,5}$/.test(value);
 }
 
