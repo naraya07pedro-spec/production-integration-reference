@@ -78,7 +78,7 @@ flowchart LR
 
 | Decision / failure | Behavior and limit |
 | --- | --- |
-| HMAC | SHA-256 over exact body bytes; timing-safe comparison; reject before JSON parsing. |
+| HMAC | SHA-256 over timestamp + exact body bytes; 300-second freshness window; timing-safe comparison before JSON parsing. |
 | Invalid input | 400 malformed JSON, 401 invalid signature, 413 over 64 KiB, 422 invalid fields/region. |
 | Event identity | Hash of source + immutable event ID; email changes do not evade deduplication. Source must be a trusted namespace. |
 | Concurrent replay | Unique SQL constraint and atomic INSERT decide one winner before sending. CI exercises 12 contenders. |
@@ -88,7 +88,7 @@ flowchart LR
 | State | SENT after success; FAILED after send failure; both block replay. |
 | Ambiguous delivery | A timeout may occur after the provider accepted the request. The provider **must honor Idempotency-Key** for safe retries. |
 | Crash / failed success-write | RESERVED remains blocked pending manual reconciliation; no automatic lease takeover. |
-| Replay horizon | Existing event keys block repeated side effects while rows are retained. No timestamp freshness check; an unseen old signed event can still run. |
+| Replay horizon | Existing event keys block repeated side effects while rows are retained. An unseen signed event must be at most 300 seconds old; a valid replay inside the window is still subject to event-key deduplication. |
 
 This is **not exactly-once delivery**. Failed/RESERVED events require reconciliation with the provider before any manual retry. Do not delete a reservation merely to unblock processing. A duplicate response reports stored state; it does not certify successful delivery. Retry-After coordination, distributed rate limiting, queueing, credential rotation, retention policy, and deployment authentication are outside this reference.
 
@@ -101,7 +101,7 @@ This is **not exactly-once delivery**. Failed/RESERVED events require reconcilia
 
 For a separately configured service, apply `db/001_init.sql` with `psql "$DATABASE_URL" -f db/001_init.sql`,
 then set `DATABASE_URL`, `WEBHOOK_SECRET`, `DOWNSTREAM_URL`, `DOWNSTREAM_TOKEN` and run `npm start`.
-`POST /events/lead` expects `x-webhook-signature` (hex SHA-256 HMAC).
+`POST /events/lead` requires `x-webhook-timestamp` (10-digit Unix seconds) and `x-webhook-signature` (hex SHA-256 HMAC of `timestamp + "." + raw_request_body`). Requests outside a 300-second window are rejected. **Breaking protocol change:** senders must update their signer and maintain reasonably synchronized clocks.
 See [scripts/demo.ts](scripts/demo.ts) for a working signed caller and mock receiver.
 Use HTTPS outside localhost. Never commit environment files.
 
