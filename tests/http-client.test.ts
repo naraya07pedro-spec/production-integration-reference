@@ -36,3 +36,31 @@ test("HTTP errors discard sensitive response bodies",async t=>{
  await assert.rejects(new FetchDownstreamClient("http://127.0.0.1:"+addr.port,"local-test-only").sendLead(normalizeLead(lead),"key"),
  (e:unknown)=>e instanceof HttpError && e.status===401 && !e.message.includes("private-response"));
 });
+
+
+test("2xx JSON requires a nonempty string provider id; 204 may omit it",async t=>{
+ const replies: Array<{status:number;body:unknown|null}>=[
+   {status:200,body:{}},{status:200,body:{id:null}},
+   {status:201,body:{id:123}},{status:200,body:{id:"  "}},
+   {status:200,body:[]},{status:201,body:{id:"provider-ok"}},
+   {status:204,body:null},
+ ];
+ let calls=0;
+ const server=createServer((_req,res)=>{
+   const entry=replies[calls++];
+   if(!entry){res.writeHead(500).end();return;}
+   res.writeHead(entry.status,{"content-type":"application/json"});
+   if(entry.status===204)res.end();
+   else res.end(JSON.stringify(entry.body));
+ });
+ server.listen(0,"127.0.0.1");await once(server,"listening");
+ t.after(()=>server.close());
+ const port=(server.address() as {port:number}).port;
+ const client=new FetchDownstreamClient("http://127.0.0.1:"+port,"local-test-only");
+ for(let i=0;i<5;i++){
+   await assert.rejects(client.sendLead(normalizeLead(lead),"stable-key"),/Invalid downstream response/);
+ }
+ assert.deepEqual(await client.sendLead(normalizeLead(lead),"stable-key"),{externalId:"provider-ok"});
+ assert.deepEqual(await client.sendLead(normalizeLead(lead),"stable-key"),{externalId:null});
+ assert.equal(calls,replies.length);
+});
