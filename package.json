@@ -11,7 +11,9 @@
     "test:db": "tsx --test tests/db/*.test.ts",
     "typecheck": "tsc --noEmit",
     "start": "tsx src/server.ts",
-    "demo": "tsx scripts/demo.ts"
+    "demo": "tsx scripts/demo.ts",
+    "reviewer:smoke": "node scripts/reviewer-smoke.mjs",
+    "test:reviewer": "node --test tests/reviewer-smoke.test.mjs"
   },
   "dependencies": {
     "pg": "^8.13.1"

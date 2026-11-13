@@ -34,7 +34,21 @@ classified retries, and persisted outcomes. **Reference/demo code; no client or 
 
 **Reliability review in 30 seconds:** [HMAC, immutable identity, PostgreSQL contention, retries and partial commits](docs/RELIABILITY-REVIEW.md). Includes the exact source/test path and the controlled persistence-failure case.
 
-## Run in two minutes
+## Reproduce the failure-path demo in a clean checkout
+
+**Preferred one-command reviewer path:** Node.js 24+, npm, and a **local** Docker Engine/Docker Desktop context (including Windows PowerShell). It never uses a pre-existing database or external provider token.
+
+```sh
+npm run test:reviewer
+npm run reviewer:smoke
+```
+
+`reviewer:smoke` refuses configured `DATABASE_URL`/`TEST_DATABASE_URL` or a remote Docker context, creates a uniquely named PostgreSQL 17 container whose port is bound to `127.0.0.1` on an automatically selected host port, waits for readiness, runs `npm ci`, type checking, unit/HTTP tests, PostgreSQL concurrency tests and the signed synthetic end-to-end demo, then removes only that new container even if a check fails. The script writes a **non-secret** `artifacts/reviewer-smoke.json` execution record. It may reinstall repo dependencies through `npm ci`; run from a disposable clone if you have uncommitted node_modules modifications.
+
+CI's dedicated `reviewer-smoke` job executes the same commands from the PR's exact head and preserves the report as an artifact. A CI pass verifies only the synthetic local environment, not any external delivery or production DB safety.
+
+### Manual fallback / separate commands
+
 
 Node.js 24+:
 
