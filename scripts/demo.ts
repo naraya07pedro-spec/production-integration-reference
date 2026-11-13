@@ -29,7 +29,8 @@ try{
  const url="http://127.0.0.1:"+(server.address() as {port:number}).port+"/events/lead";
  const body=JSON.stringify({id:"synthetic-demo-001",email:"buyer@example.test",region:"ID",source:"demo"});
  const send=async()=>{
-   const response=await fetch(url,{method:"POST",headers:{"x-webhook-signature":signPayload(body,secret)},body});
+   const timestamp=String(Math.floor(Date.now()/1000));
+   const response=await fetch(url,{method:"POST",headers:{"x-webhook-timestamp":timestamp,"x-webhook-signature":signPayload(body,secret,timestamp)},body});
    assert.equal(response.status,200);return await response.json();
  };
  assert.equal((await send()).status,"sent");

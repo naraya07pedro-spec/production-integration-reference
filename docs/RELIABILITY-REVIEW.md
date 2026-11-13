@@ -8,7 +8,7 @@ Evan Naraya's runnable TypeScript and PostgreSQL reference demonstrates safe int
 
 | Boundary | Implemented behavior | Material limit |
 | --- | --- | --- |
-| Intake | HMAC SHA-256 over original request bytes, timing-safe compare before parsing | No timestamp freshness rule for unseen old signed events |
+| Intake | HMAC SHA-256 over original request bytes, timing-safe compare before parsing | Signed timestamp freshness bound at 300 seconds; within-window replay still relies on event reservation |
 | Contract | Size, JSON, identity, email and region checks before reservation | A trusted source namespace is part of deployment configuration |
 | Identity | Source plus immutable event ID, independent of mutable email | Retention determines the replay horizon |
 | Contention | PostgreSQL unique constraint and INSERT ON CONFLICT decide one winner | Requires the real database; a memory fixture is separate evidence |
