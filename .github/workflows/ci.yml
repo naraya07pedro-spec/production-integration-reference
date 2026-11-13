@@ -33,3 +33,27 @@ jobs:
       - run: npm test
       - run: npm run test:db
       - run: npm run demo
+  reviewer-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      EVIDENCE_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: node --test tests/reviewer-smoke.test.mjs
+      - run: node scripts/reviewer-smoke.mjs
+      - name: Preserve exact-revision reviewer evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reviewer-smoke-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/reviewer-smoke.json
+          if-no-files-found: warn
+          retention-days: 14
