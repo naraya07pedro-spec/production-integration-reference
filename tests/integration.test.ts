@@ -59,3 +59,15 @@ test("structured logs omit payload, provider ID, and error messages",async()=>{
 test("tuple identity avoids delimiter collision",()=>{
  assert.notEqual(buildIdempotencyKey(normalizeLead({...lead,source:"a|b",id:"c"})),buildIdempotencyKey(normalizeLead({...lead,source:"a",id:"b|c"})));
 });
+
+test("provider cooldown above retry budget never triggers an early duplicate side effect",async()=>{
+ const store=new MemoryStore();let calls=0;let slept=false;
+ const downstream={async sendLead(){calls++;throw new HttpError(429,30001);}};
+ await assert.rejects(processLeadEvent(lead,{store,downstream,logger},
+  {sleep:async()=>{slept=true;}}),
+  (error:unknown)=>error instanceof HttpError && error.status===429 && error.retryAfterMs===30001);
+ assert.equal(calls,1);assert.equal(slept,false);
+ assert.equal([...store.states.values()][0],"FAILED");
+ assert.equal((await processLeadEvent(lead,{store,downstream,logger})).status,"duplicate");
+ assert.equal(calls,1);
+});
