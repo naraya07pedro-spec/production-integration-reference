@@ -43,7 +43,10 @@ export class FetchDownstreamClient implements DownstreamClient {
       }
       if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("Invalid downstream response");
       const id = (body as { id?: unknown }).id;
-      return { externalId: typeof id === "string" ? id : null };
+      // 204 is the only explicitly ID-less success in this reference contract.
+      // Do not record malformed JSON success as SENT with an unknown provider ID.
+      if (typeof id !== "string" || !id.trim()) throw new Error("Invalid downstream response");
+      return { externalId: id };
     } finally { clearTimeout(timer); }
   }
 }
