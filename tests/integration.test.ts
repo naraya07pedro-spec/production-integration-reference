@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { processLeadEvent, buildIdempotencyKey, normalizeLead } from "../src/handler.js";
-import { HttpError } from "../src/retry.js";
+import { HttpError, TransientError } from "../src/retry.js";
 import { MemoryStore, logger, lead, immediate } from "./helpers.js";
 
 test("normalizes, reserves before sending, and blocks sequential replay with changed email", async()=>{
@@ -26,11 +26,11 @@ test("transient failure retries then persists success",async()=>{
  assert.equal((await processLeadEvent(lead,{store,downstream,logger},immediate)).status,"sent");
  assert.equal(calls,3); assert.equal([...store.states.values()][0],"SENT");
 });
-for(const status of [400,401,403,404,422,503]) test("persists exhausted/permanent failure "+status,async()=>{
+for(const status of [400,401,403,404,422,503]) test("a downstream exception preserves RESERVED until reconciliation: "+status,async()=>{
  const store=new MemoryStore(); let calls=0;
  const downstream={async sendLead(){calls++;throw new HttpError(status);}};
  await assert.rejects(processLeadEvent(lead,{store,downstream,logger},immediate));
- assert.equal(calls,status===503?3:1); assert.equal([...store.states.values()][0],"FAILED");
+ assert.equal(calls,status===503?3:1); assert.equal([...store.states.values()][0],"RESERVED");
  assert.equal((await processLeadEvent(lead,{store,downstream,logger})).status,"duplicate");
 });
 for(const input of [null,[],42,"x",{...lead,id:{}},{...lead,email:"bad"},{...lead,region:"US"}])
@@ -38,6 +38,19 @@ for(const input of [null,[],42,"x",{...lead,id:{}},{...lead,email:"bad"},{...lea
  const store=new MemoryStore(); let calls=0;
  const result=await processLeadEvent(input,{store,downstream:{async sendLead(){calls++;return {externalId:null};}},logger});
  assert.equal(result.status,"blocked");assert.equal(store.states.size,0);assert.equal(calls,0);
+});
+test("provider accepts a request but its response is lost: no replay after exhausted retries",async()=>{
+ const store=new MemoryStore();const providerWrites=new Set<string>();let attempts=0;
+ const downstream={async sendLead(_payload:ReturnType<typeof normalizeLead>,key:string){
+   attempts++;providerWrites.add(key);throw new TransientError();
+ }};
+ await assert.rejects(processLeadEvent(lead,{store,downstream,logger},immediate),TransientError);
+ assert.equal(attempts,3);assert.equal(providerWrites.size,1);
+ assert.equal([...store.states.values()][0],"RESERVED");
+ const replay=await processLeadEvent(lead,{store,downstream,logger});
+ assert.equal(replay.status,"duplicate");
+ if(replay.status==="duplicate") assert.equal(replay.state,"RESERVED");
+ assert.equal(attempts,3);
 });
 test("state persistence failure after downstream success preserves RESERVED",async()=>{
  const store=new MemoryStore();store.markSent=async()=>{throw new Error("database unavailable");};
@@ -67,7 +80,7 @@ test("provider cooldown above retry budget never triggers an early duplicate sid
   {sleep:async()=>{slept=true;}}),
   (error:unknown)=>error instanceof HttpError && error.status===429 && error.retryAfterMs===30001);
  assert.equal(calls,1);assert.equal(slept,false);
- assert.equal([...store.states.values()][0],"FAILED");
+ assert.equal([...store.states.values()][0],"RESERVED");
  assert.equal((await processLeadEvent(lead,{store,downstream,logger})).status,"duplicate");
  assert.equal(calls,1);
 });
