@@ -13,7 +13,8 @@
     "start": "tsx src/server.ts",
     "demo": "tsx scripts/demo.ts",
     "reviewer:smoke": "node scripts/reviewer-smoke.mjs",
-    "test:reviewer": "node --test tests/reviewer-smoke.test.mjs"
+    "test:reviewer": "node --test tests/reviewer-smoke.test.mjs",
+    "reconcile:report": "tsx scripts/reconciliation-report.ts"
   },
   "dependencies": {
     "pg": "^8.13.1"
