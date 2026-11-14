@@ -23,6 +23,10 @@ If a provider commits an event but the client loses its response, the local send
 
 Unit tests simulate a provider that accepts once but never returns a response and verify no replay after retries exhaust. The PostgreSQL test verifies an exhausted 503 retains RESERVED with no error_class and that a separately confirmed rejection can be finalized as FAILED. These tests are controlled fixtures, not evidence of real external provider correctness. A successful transport response is not proof of business completion.
 
+## Read-only operator triage
+
+`scripts/reconciliation-report.ts` provides a bounded, database-only inspection of aged `RESERVED` records. Its query selects only idempotency hash and timestamps, runs in a READ ONLY transaction through the CLI, and cannot finalize or replay records. Hashes are masked by default; `--full-keys` is a private operator action. Candidate age is **not** a proof of remote failure. PostgreSQL negative tests include a 90-minute-old RESERVED row, a newer RESERVED row and finalized rows, and confirm no state mutation. See [README](../README.md#read-only-reconciliation-triage) and [database tests](../tests/db/postgres.test.ts). No real provider reconciliation has been performed.
+
 ## Controlled partial failure case
 
 Context: processLeadEvent reserves a synthetic event and the injected downstream accepts it. Failure: markSent is forced to throw a database-unavailable error. Root cause: provider and database writes cannot share a transaction. Safeguard: the reservation stays RESERVED rather than releasing ownership or retrying the external action. Verified result: the existing test asserts rejection and retained RESERVED state. See [integration.test.ts](../tests/integration.test.ts).
