@@ -6,6 +6,32 @@ on:
 permissions:
   contents: read
 jobs:
+  dependency-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      EVIDENCE_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Test fail-closed audit policy
+        run: node --test tests/dependency-audit.test.mjs
+      - name: Audit all locked dependencies
+        run: node scripts/dependency-audit.mjs
+      - name: Preserve current-revision dependency findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-dependency-audit-${{ github.event.pull_request.head.sha || github.sha }}
+          path: artifacts/dependency-audit.json
+          if-no-files-found: warn
+          retention-days: 14
   integration:
     runs-on: ubuntu-latest
     timeout-minutes: 10

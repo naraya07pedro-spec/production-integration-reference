@@ -36,4 +36,15 @@ Reports are reviewed for applicability, exploit preconditions, possible remediat
 
 ## Dependency maintenance
 
+The [CI dependency-security job](.github/workflows/ci.yml) runs a separately
+enforced `npm audit --audit-level=moderate --json` against the locked npm
+dependency tree, writes `artifacts/dependency-audit.json` to the current-run
+artifact, and fails closed if audit results are unavailable, malformed or
+contain moderate/high/critical advisories. The report records affected package
+names, advisory IDs when present, version ranges and reported fix candidates.
+Low-severity advisories remain visible but do not block under this declared
+threshold. This is a public-registry advisory lookup, not a penetration test
+or evidence that every vulnerable path is exploitable.
+
+
 Dependency version-update proposals are configured in [`.github/dependabot.yml`](.github/dependabot.yml). GitHub vulnerability alerts and automated security-update availability depend on repository settings and platform support; the presence of this file alone does **not** prove those settings are enabled. Review dependency and GitHub Actions upgrades individually, especially major changes; do not merge them automatically.
