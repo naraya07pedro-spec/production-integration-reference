@@ -55,9 +55,11 @@ export async function processLeadEvent(
       onRetry: attempt => deps.logger.info("downstream_retry", { attempt }),
     });
   } catch (error) {
-    // Store a fixed category: arbitrary Error.name/message can contain provider data.
-    await deps.store.markFailed(idempotencyKey, "downstream_failure");
-    deps.logger.error("lead_send_failed", { reason: "downstream_failure" });
+    // A thrown call is not proof of rejection: the provider might have committed
+    // before a timeout, a 5xx, or a malformed success response. Keep the unique
+    // reservation held until a human checks the provider's authoritative outcome.
+    // In particular, do not turn an unknown remote effect into local FAILED.
+    deps.logger.error("lead_send_outcome_unknown", { reason: "provider_outcome_unconfirmed" });
     throw error;
   }
   // Do not mark FAILED when the downstream succeeded but the state write failed.

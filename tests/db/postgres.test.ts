@@ -6,6 +6,7 @@ import {Pool} from "pg";
 import {PostgresIdempotencyStore} from "../../src/idempotency.js";
 import {processLeadEvent,normalizeLead,buildIdempotencyKey} from "../../src/handler.js";
 import {HttpError} from "../../src/retry.js";
+import {listReconciliationCandidates} from "../../scripts/reconciliation-report.js";
 import {lead,logger,immediate} from "../helpers.js";
 
 // Explicit opt-in: only point TEST_DATABASE_URL at a disposable test database.
@@ -29,7 +30,47 @@ test("PostgreSQL unique reservation, concurrent side effects, persistence and fa
    const failed={...lead,id:"failed-db"};
    await assert.rejects(processLeadEvent(failed,{store,logger,downstream:{async sendLead(){throw new HttpError(400);}}},immediate));
    const failure=await pool.query("SELECT state,error_class FROM integration_events WHERE idempotency_key=$1",[buildIdempotencyKey(normalizeLead(failed))]);
-   assert.deepEqual(failure.rows,[{state:"FAILED",error_class:"downstream_failure"}]);
+   assert.deepEqual(failure.rows,[{state:"RESERVED",error_class:null}]);
+   // A checked provider refusal, not an HTTP exception alone, authorizes the
+   // operator to finalize FAILED. This explicit transition remains one-way.
+   await store.markFailed(buildIdempotencyKey(normalizeLead(failed)),"provider_confirmed_rejection");
+
+   const ambiguous={...lead,id:"uncertain-db"};
+   const ambiguousKey=buildIdempotencyKey(normalizeLead(ambiguous));
+   await assert.rejects(processLeadEvent(ambiguous,{store,logger,downstream:{
+     async sendLead(){throw new HttpError(503);}
+   }},immediate));
+   const uncertain=await pool.query(
+     "SELECT state,error_class FROM integration_events WHERE idempotency_key=$1",[ambiguousKey]);
+   assert.deepEqual(uncertain.rows,[{state:"RESERVED",error_class:null}]);
+   const replay=await processLeadEvent(ambiguous,{store,logger,downstream});
+   assert.equal(replay.status,"duplicate");
+   if(replay.status==="duplicate") assert.equal(replay.state,"RESERVED");
+
+   // Read-only operator triage: include old RESERVED, exclude recent in-flight
+   // reservations and finalized rows. Never infer a provider failure from age.
+   const oldCandidate={...lead,id:"old-needs-reconciliation"};
+   const oldKey=buildIdempotencyKey(normalizeLead(oldCandidate));
+   assert.equal((await store.reserve(oldKey,normalizeLead(oldCandidate))).acquired,true);
+   await pool.query(
+     "UPDATE integration_events SET created_at = now() - interval '90 minutes' WHERE idempotency_key=$1",
+     [oldKey],
+   );
+   const recentCandidate={...lead,id:"recent-reservation"};
+   const recentKey=buildIdempotencyKey(normalizeLead(recentCandidate));
+   assert.equal((await store.reserve(recentKey,normalizeLead(recentCandidate))).acquired,true);
+   const readOnlyClient=await pool.connect();
+   try {
+     await readOnlyClient.query("BEGIN TRANSACTION READ ONLY");
+     const candidates=await listReconciliationCandidates(readOnlyClient,{olderThanMinutes:15,limit:10});
+     assert.deepEqual(candidates.map(candidate=>candidate.idempotencyKey),[oldKey]);
+     assert.equal(candidates[0]?.createdAt instanceof Date,true);
+     await readOnlyClient.query("COMMIT");
+   }finally{readOnlyClient.release();}
+   const stateAfterReport=await pool.query(
+     "SELECT state FROM integration_events WHERE idempotency_key=$1",[oldKey]);
+   assert.deepEqual(stateAfterReport.rows,[{state:"RESERVED"}]);
+   assert.notEqual(oldKey,recentKey);
 
    // A missing reservation must never be reported as a successfully persisted outcome.
    const missingKey="missing-"+randomUUID();
