@@ -29,7 +29,22 @@ test("PostgreSQL unique reservation, concurrent side effects, persistence and fa
    const failed={...lead,id:"failed-db"};
    await assert.rejects(processLeadEvent(failed,{store,logger,downstream:{async sendLead(){throw new HttpError(400);}}},immediate));
    const failure=await pool.query("SELECT state,error_class FROM integration_events WHERE idempotency_key=$1",[buildIdempotencyKey(normalizeLead(failed))]);
-   assert.deepEqual(failure.rows,[{state:"FAILED",error_class:"downstream_failure"}]);
+   assert.deepEqual(failure.rows,[{state:"RESERVED",error_class:null}]);
+   // A checked provider refusal, not an HTTP exception alone, authorizes the
+   // operator to finalize FAILED. This explicit transition remains one-way.
+   await store.markFailed(buildIdempotencyKey(normalizeLead(failed)),"provider_confirmed_rejection");
+
+   const ambiguous={...lead,id:"uncertain-db"};
+   const ambiguousKey=buildIdempotencyKey(normalizeLead(ambiguous));
+   await assert.rejects(processLeadEvent(ambiguous,{store,logger,downstream:{
+     async sendLead(){throw new HttpError(503);}
+   }},immediate));
+   const uncertain=await pool.query(
+     "SELECT state,error_class FROM integration_events WHERE idempotency_key=$1",[ambiguousKey]);
+   assert.deepEqual(uncertain.rows,[{state:"RESERVED",error_class:null}]);
+   const replay=await processLeadEvent(ambiguous,{store,logger,downstream});
+   assert.equal(replay.status,"duplicate");
+   if(replay.status==="duplicate") assert.equal(replay.state,"RESERVED");
 
    // A missing reservation must never be reported as a successfully persisted outcome.
    const missingKey="missing-"+randomUUID();
