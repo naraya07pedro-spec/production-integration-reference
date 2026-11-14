@@ -108,6 +108,18 @@ flowchart LR
 
 This is **not exactly-once delivery**. A downstream exception retains RESERVED instead of assuming failure; only an independently verified provider rejection may be manually finalized as FAILED. Failed/RESERVED events require reconciliation with the provider before any manual retry. Do not delete a reservation merely to unblock processing. A duplicate response reports stored state; it does not certify successful delivery. Distributed rate limiting, queueing, credential rotation, retention policy, and deployment authentication are outside this reference. An over-budget `Retry-After` fails closed as a terminal local failure and must be assessed during provider reconciliation; this reference does not schedule delayed resume or claim provider-enforced exactly-once delivery.
 
+## Read-only reconciliation triage
+
+A thrown send or lost provider acknowledgment retains `RESERVED` until an operator verifies the external effect. To **find candidates** older than 15 minutes, use an authorized database role with SELECT permissions:
+
+```sh
+DATABASE_URL='postgresql://...' npm run reconcile:report -- --older-than-minutes 15 --limit 50
+```
+
+PowerShell: set `$env:DATABASE_URL` to an **existing authorized connection string**, then run `npm run reconcile:report -- --older-than-minutes 15 --limit 50`. The command uses a PostgreSQL **READ ONLY transaction**. It does not update events, retry requests, call a provider or claim reconciliation has occurred. Defaults: 15 minutes, max 100 rows, masked event-hash prefixes. `--full-keys` explicitly prints complete stable hashes for an operator with authorization; keep those results private and never attach the report to a public CI artifact. A hash is still a linkable pseudonymous identifier.
+
+A stale `RESERVED` row may still represent a slow in-flight request, not a failed delivery. Before making **any** state change or manual replay, verify the provider's authoritative event status and the expected idempotency semantics; keep a separate access-controlled decision record. This tool intentionally does **not** implement the provider lookup, approvals, manual state mutation, or automatic recovery. Tests use a disposable PostgreSQL schema and verify the report leaves state unchanged.
+
 ## Inspect or run the service
 
 - [SQL migration](db/001_init.sql), [retry policy](src/retry.ts), [HMAC](src/webhook.ts), [server](src/server.ts)
