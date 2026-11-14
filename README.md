@@ -85,7 +85,9 @@ flowchart LR
   D -->|acquired| F[HTTP request with stable idempotency key]
   F -->|408 / 429 / 5xx / transport| G[Bounded backoff + jitter]
   G --> F
-  F --> H[Persist SENT or FAILED]
+  F -->|acknowledged success| H[Persist SENT]
+  F -->|exception: outcome unknown| I[Keep RESERVED; manual provider reconciliation]
+  I -->|confirmed negative outcome only| J[Operator finalizes FAILED]
 ```
 
 ## Decisions and failure model
@@ -99,12 +101,12 @@ flowchart LR
 | Transient failure | 408, 429, 500–599 and fetch transport/timeout failures: 3 attempts by default, at most 5; capped exponential delay plus jitter. For HTTP 429/503, valid `Retry-After` seconds or HTTP-date is honored up to 30 seconds. A longer hint **prevents automatic retry**, rather than sending early. |
 | Permanent error | Other HTTP statuses, invalid success JSON, and application errors are not blindly retried. |
 | Provider success contract | HTTP 204 may omit a response ID. Other successful JSON responses must contain a nonempty string `id`; malformed success is rejected rather than persisted as SENT. |
-| State | SENT after success; FAILED after send failure; both block replay. |
-| Ambiguous delivery | A timeout may occur after the provider accepted the request. The provider **must honor Idempotency-Key** for safe retries. |
+| State | SENT after an acknowledged success. A downstream exception leaves RESERVED (including HTTP 4xx/5xx, timeout, and malformed success), preventing silent replay. FAILED requires an operator's provider-confirmed negative outcome; all retained keys block duplicates. |
+| Ambiguous delivery | A timeout, non-2xx error, or invalid success response is not independent evidence that the provider never wrote data. The provider **must honor Idempotency-Key** for safe retries; after exhausted attempts, manual authoritative reconciliation is required. |
 | Crash / failed success-write | RESERVED remains blocked pending manual reconciliation; no automatic lease takeover. |
 | Replay horizon | Existing event keys block repeated side effects while rows are retained. An unseen signed event must be at most 300 seconds old; a valid replay inside the window is still subject to event-key deduplication. |
 
-This is **not exactly-once delivery**. Failed/RESERVED events require reconciliation with the provider before any manual retry. Do not delete a reservation merely to unblock processing. A duplicate response reports stored state; it does not certify successful delivery. Distributed rate limiting, queueing, credential rotation, retention policy, and deployment authentication are outside this reference. An over-budget `Retry-After` fails closed as a terminal local failure and must be assessed during provider reconciliation; this reference does not schedule delayed resume or claim provider-enforced exactly-once delivery.
+This is **not exactly-once delivery**. A downstream exception retains RESERVED instead of assuming failure; only an independently verified provider rejection may be manually finalized as FAILED. Failed/RESERVED events require reconciliation with the provider before any manual retry. Do not delete a reservation merely to unblock processing. A duplicate response reports stored state; it does not certify successful delivery. Distributed rate limiting, queueing, credential rotation, retention policy, and deployment authentication are outside this reference. An over-budget `Retry-After` fails closed as a terminal local failure and must be assessed during provider reconciliation; this reference does not schedule delayed resume or claim provider-enforced exactly-once delivery.
 
 ## Inspect or run the service
 
