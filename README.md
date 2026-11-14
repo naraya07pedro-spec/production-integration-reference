@@ -16,6 +16,12 @@ A runnable TypeScript/PostgreSQL integration reference focused on the failure mo
 - Persisted outcomes and explicit handling of partial / ambiguous failure
 - HTTP, database-concurrency and signed end-to-end checks in CI
 
+**Dependency review:** A separate `dependency-security` CI job checks the
+current lockfile for known moderate-or-higher npm advisories, validates its own
+fail-closed report handling and uploads a revision-bound JSON artifact. A
+passing registry audit cannot establish production security or replace human
+triage of advisory reachability.
+
 **Fastest review path:** [reliability review](docs/RELIABILITY-REVIEW.md) → [handler](src/handler.ts) → [reservation](src/idempotency.ts) → [tests](tests/)
 
 
